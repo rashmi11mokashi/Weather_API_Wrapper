@@ -25,17 +25,42 @@ app.get('/weather/current', async(req, res) => {
     }
 
     try {
-        const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather`, {
+        const response = await axios.get(`https://api.openweathermap.org/data/2.5/forecast`, {
             params: { q: city, appid: process.env.WEATHER_API_KEY, units: 'metric' }
         });
         const data = response.data;
-        const formatted_data = {
+        /*const formatted_data = {
             location: `${data.name}, ${data.sys.country}`,
             temperature: { current: data.main.temp, feels_like: data.main.feels_like },
             humidity: data.main.humidity,
             weather: data.weather[0].description,
             wind_speed: data.wind.speed
+        };*/
+        const groupByDay = (list) => {
+            return list.reduce((acc, item) => {
+                const date = item.dt_txt.split(' ')[0];
+                if (!acc[date]) {
+                    acc[date] = [];
+                }
+                acc[date].push(item);
+                return acc;
+            }, {});
         };
+        const formatDaily = (groupedData) => {
+            return Object.keys(groupedData).map((date) => {
+                const dayDate = groupedData[date];
+                const avgTemp = dayDate.reduce((sum, item) => sum + item.main.temp, 0) / dayDate.length;
+                const weatherDescp = dayDate[0].weather[0].description;
+                return {
+                    date,
+                    temperature: avgTemp.toFixed(1),
+                    weather: weatherDescp
+                };
+            });
+        };
+
+        const groupedData = groupByDay(response.data.list)
+        const formatted_data = formatDaily(groupedData)
         return res.json(formatted_data);
         //res.json(response.data);
 
