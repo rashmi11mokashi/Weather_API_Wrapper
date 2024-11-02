@@ -21,17 +21,26 @@ app.listen(PORT, () => {
 app.get('/weather/current', async(req, res) => {
     const city = req.query.city;
     if (!city) {
-        return
-        res.status(400).json({ error: 'City is required' });
+        return res.status(400).json({ error: 'City is required' });
     }
 
     try {
         const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather`, {
             params: { q: city, appid: process.env.WEATHER_API_KEY, units: 'metric' }
         });
-        res.json(response.data);
+        const data = response.data;
+        const formatted_data = {
+            location: `${data.name}, ${data.sys.country}`,
+            temperature: { current: data.main.temp, feels_like: data.main.feels_like },
+            humidity: data.main.humidity,
+            weather: data.weather[0].description,
+            wind_speed: data.wind.speed
+        };
+        return res.json(formatted_data);
+        //res.json(response.data);
+
     } catch (error) {
         res.status(500).json({ error: 'Failed to retrieve data' });
     }
-    res.send('Fetching weather data...');
+    //res.send('Fetching weather data...');
 });
